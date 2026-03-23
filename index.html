@@ -283,7 +283,7 @@
     <label style="font-size:14px;color:#8e8e93;font-weight:600;">メンバー</label>
     <div class="member-input-row" style="margin-top:6px;">
       <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" onkeydown="if(event.key==='Enter')addMember()">
-      <button class="btn btn-primary btn-small" onclick="addMember()">追加</button>
+     <button class="btn btn-primary btn-small" onclick="addMember()" tabindex="-1">追加</button>
     </div>
     <div id="member-list"></div>
   </div>
@@ -424,9 +424,13 @@ function addMember() {
   if (!name) return;
   if (members.length >= 8) { alert('最大8人までです'); return; }
   if (members.includes(name)) { alert('同じ名前が既にあります'); return; }
-  members.push(name); input.value = ''; input.focus();
+  members.push(name);
+  input.value = '';
   renderMemberList();
+  // iOSではsetTimeoutで少し遅らせてfocusする
+  setTimeout(() => { input.focus(); }, 50);
 }
+
 function removeMember(idx) { members.splice(idx, 1); renderMemberList(); }
 function renderMemberList() {
   document.getElementById('member-list').innerHTML = members.map((m, i) => `
