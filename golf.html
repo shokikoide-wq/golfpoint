@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ゴルフポイント精算</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    background: #f2f2f7; color: #1c1c1e; min-height: 100vh; overflow-x: hidden;
+  }
+  .screen { display: none; min-height: 100vh; padding: 16px; padding-bottom: 100px; }
+  .screen.active { display: block; }
+
+  .header { text-align: center; padding: 20px 0 10px; }
+  .header h1 { font-size: 22px; color: #1c1c1e; letter-spacing: 0.5px; font-weight: 800; }
+  .header p { font-size: 13px; color: #8e8e93; margin-top: 4px; }
+
+  .btn {
+    display: block; width: 100%; padding: 16px; border: none; border-radius: 14px;
+    font-size: 17px; font-weight: 700; cursor: pointer; transition: transform 0.1s, opacity 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: #34c759; color: #fff; }
+  .btn-secondary { background: #fff; color: #34c759; border: 2px solid #34c759; }
+  .btn-ghost { background: transparent; color: #8e8e93; border: 1.5px solid #d1d1d6; }
+  .btn-small { display: inline-block; width: auto; padding: 10px 20px; font-size: 14px; border-radius: 10px; }
+
+  input[type="text"], input[type="number"] {
+    width: 100%; padding: 14px 16px; border: 2px solid #e5e5ea; border-radius: 12px;
+    background: #fff; color: #1c1c1e; font-size: 16px; outline: none; transition: border-color 0.2s;
+  }
+  input:focus { border-color: #34c759; }
+
+  .home-logo { font-size: 60px; text-align: center; margin: 30px 0 10px; }
+
+  .history-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px; background: #fff; border-radius: 12px; margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: pointer;
+  }
+  .history-item:active { background: #f5f5f5; }
+  .history-item .info { flex: 1; }
+  .history-item .info .round-name { font-size: 15px; font-weight: 700; }
+  .history-item .info .date { font-size: 12px; color: #8e8e93; margin-top: 2px; }
+  .history-item .info .members { font-size: 13px; color: #636366; margin-top: 2px; }
+  .history-item .arrow { color: #34c759; font-size: 20px; }
+  .history-delete {
+    background: none; border: none; color: #ff3b3088; font-size: 18px;
+    padding: 4px 8px; cursor: pointer; margin-right: 8px;
+  }
+
+  .member-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .member-input-row input { flex: 1; }
+  .member-list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; background: #fff; border-radius: 10px; margin-bottom: 8px;
+    font-size: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .member-list-item .remove-btn {
+    background: none; border: none; color: #ff3b30; font-size: 22px;
+    cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+
+  .hole-header {
+    text-align: center; padding: 16px 0 12px;
+    border-bottom: 1px solid #e5e5ea; margin-bottom: 16px;
+  }
+  .hole-header .hole-label { font-size: 14px; color: #8e8e93; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .hole-header .round-name-display { font-size: 13px; color: #636366; margin-top: 2px; }
+  .hole-nav-row {
+    display: flex; align-items: center; justify-content: center; gap: 30px; margin-top: 8px;
+  }
+  .hole-nav-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: 2px solid #d1d1d6;
+    background: #fff; color: #1c1c1e; font-size: 18px; font-weight: bold;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .hole-nav-btn:active { background: #e5e5ea; }
+  .hole-num { font-size: 32px; font-weight: 800; color: #1c1c1e; }
+
+  .player-card {
+    background: #fff; border-radius: 16px; margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07); overflow: hidden;
+  }
+  .player-card-header {
+    padding: 12px 16px; font-size: 16px; font-weight: 700; color: #1c1c1e;
+    border-bottom: 1px solid #f2f2f7; text-align: center; background: #fafafa;
+  }
+  .player-card-body { padding: 12px 16px; }
+
+  .counter-row-new { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; }
+  .counter-row-new:last-of-type { margin-bottom: 0; }
+
+  .counter-icon {
+    width: 32px; height: 32px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+  .counter-icon.maru { background: #34c75922; color: #34c759; }
+  .counter-icon.batsu { background: #ff3b3022; color: #ff3b30; }
+
+  .counter-controls {
+    flex: 1; display: grid; grid-template-columns: 48px 1fr 48px;
+    align-items: center; background: #f2f2f7; border-radius: 10px; overflow: hidden; height: 44px;
+  }
+  .counter-controls .c-btn {
+    height: 100%; border: none; background: transparent; font-size: 22px;
+    font-weight: 600; cursor: pointer; color: #1c1c1e;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .counter-controls .c-btn:active { background: #d1d1d6; }
+  .counter-controls .c-btn.minus { color: #8e8e93; }
+  .counter-controls .c-val {
+    text-align: center; font-size: 22px; font-weight: 800; color: #1c1c1e;
+    background: #fff; display: flex; align-items: center; justify-content: center;
+    border-left: 1px solid #e5e5ea; border-right: 1px solid #e5e5ea;
+  }
+
+  .player-card-footer {
+    padding: 8px 16px 12px; text-align: center; font-size: 14px;
+    color: #8e8e93; font-weight: 600;
+  }
+  .player-card-footer .pts { font-weight: 800; font-size: 16px; }
+  .player-card-footer .pts.positive { color: #34c759; }
+  .player-card-footer .pts.negative { color: #ff3b30; }
+  .player-card-footer .pts.zero { color: #8e8e93; }
+
+  .cumulative-section {
+    background: #fff; border-radius: 16px; padding: 16px; margin: 16px 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  .cumulative-section h3 {
+    font-size: 13px; color: #8e8e93; margin-bottom: 12px; text-align: center;
+    font-weight: 600; letter-spacing: 0.5px;
+  }
+  .cumulative-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .cumulative-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; background: #f2f2f7; border-radius: 10px; font-size: 13px;
+  }
+  .cumulative-item .name { font-weight: 700; }
+  .cumulative-item .scores { display: flex; gap: 6px; align-items: center; }
+  .cumulative-item .scores .m { color: #34c759; font-weight: 600; }
+  .cumulative-item .scores .b { color: #ff3b30; font-weight: 600; }
+  .total-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    font-size: 12px; font-weight: 700;
+  }
+  .total-badge.plus { background: #34c75922; color: #34c759; }
+  .total-badge.minus { background: #ff3b3022; color: #ff3b30; }
+  .total-badge.zero { background: #8e8e9322; color: #8e8e93; }
+
+  .hole-actions { display: flex; gap: 8px; margin: 4px 0 8px; justify-content: center; }
+
+  /* Settlement */
+  .settle-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; background: #fff; border-radius: 12px; margin-bottom: 6px;
+    font-size: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .settle-row .player-score .name { font-weight: 700; }
+  .settle-row .player-score .detail { font-size: 12px; color: #8e8e93; margin-top: 2px; }
+  .settle-row .net-val { font-weight: 800; font-size: 18px; }
+  .settle-row .net-val.positive { color: #34c759; }
+  .settle-row .net-val.negative { color: #ff3b30; }
+
+  .h2h-section {
+    background: #fff; border-radius: 16px; padding: 16px; margin: 16px 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  .h2h-section h3 {
+    font-size: 13px; color: #8e8e93; margin-bottom: 12px; text-align: center;
+    font-weight: 600; letter-spacing: 0.5px;
+  }
+  .h2h-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; background: #f2f2f7; border-radius: 10px; margin-bottom: 6px; font-size: 14px;
+  }
+  .h2h-row:last-child { margin-bottom: 0; }
+  .h2h-names { font-weight: 600; color: #1c1c1e; display: flex; align-items: center; gap: 6px; }
+  .h2h-names .sep { color: #c7c7cc; font-size: 12px; }
+  .h2h-result { text-align: right; }
+  .h2h-result .diff { font-weight: 700; font-size: 13px; }
+  .h2h-result .diff.win { color: #34c759; }
+  .h2h-result .diff.lose { color: #ff3b30; }
+  .h2h-result .diff.even { color: #8e8e93; }
+  .h2h-result .yen { font-weight: 800; font-size: 14px; color: #1c1c1e; margin-top: 1px; }
+
+  .payment-card {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: #fff; border-radius: 14px; margin-bottom: 8px;
+    border-left: 4px solid #ff9500; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  .payment-card .flow { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
+  .payment-card .flow .arrow-pay { color: #ff9500; font-size: 20px; }
+  .payment-card .amount { font-size: 18px; font-weight: 800; color: #ff9500; }
+
+  .point-input-row { display: flex; align-items: center; gap: 10px; margin: 16px 0; }
+  .point-input-row label { font-size: 15px; white-space: nowrap; font-weight: 600; }
+  .point-input-row input { width: 120px; text-align: center; font-size: 20px; font-weight: 700; }
+  .point-input-row .unit { font-size: 15px; color: #8e8e93; }
+
+  .section-title {
+    font-size: 14px; color: #8e8e93; margin: 20px 0 10px;
+    text-align: center; letter-spacing: 1px; font-weight: 600;
+  }
+
+  .share-area { display: flex; gap: 8px; margin-top: 20px; }
+  .share-area .btn { flex: 1; text-align: center; }
+
+  .top-bar {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;
+  }
+  .back-btn {
+    background: none; border: none; color: #34c759; font-size: 15px;
+    cursor: pointer; padding: 8px 0; font-weight: 600;
+  }
+  .back-btn:active { opacity: 0.6; }
+  .home-btn {
+    background: none; border: none; color: #8e8e93; font-size: 14px;
+    cursor: pointer; padding: 8px 0; font-weight: 600;
+  }
+  .home-btn:active { opacity: 0.6; }
+
+  .autosave-toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #1c1c1e; color: #fff; padding: 8px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 999;
+  }
+  .autosave-toast.show { opacity: 0.85; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .screen.active { animation: fadeIn 0.2s ease; }
+
+  .settle-done {
+    text-align: center; padding: 16px; background: #34c75915; border-radius: 14px;
+    margin-top: 12px; color: #34c759; font-weight: 700; font-size: 15px;
+  }
+
+  .bottom-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<!-- Autosave toast -->
+<div class="autosave-toast" id="autosave-toast">💾 自動保存しました</div>
+
+<!-- ========== Screen 1: Home ========== -->
+<div id="screen-home" class="screen active">
+  <div class="header">
+    <div class="home-logo">⛳</div>
+    <h1>ゴルフポイント精算</h1>
+    <p>ラウンドの⭕❌を記録して精算</p>
+  </div>
+  <div style="margin-top:30px;">
+    <button class="btn btn-primary" onclick="goToSetup()">新しいラウンドを始める</button>
+  </div>
+  <div style="margin-top:30px;">
+    <div class="section-title">📋 過去のラウンド</div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- ========== Screen 2: Setup ========== -->
+<div id="screen-setup" class="screen">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHome()">← 戻る</button>
+  </div>
+  <div class="header">
+    <h1>ラウンド設定</h1>
+    <p>ラウンド名とメンバーを入力</p>
+  </div>
+  <div style="margin-top:20px;">
+    <label style="font-size:14px;color:#8e8e93;font-weight:600;">ラウンド名</label>
+    <input type="text" id="round-name-input" placeholder="例：2026/3/23 太平洋クラブ" maxlength="30" style="margin-top:6px;margin-bottom:16px;">
+  </div>
+  <div>
+    <label style="font-size:14px;color:#8e8e93;font-weight:600;">メンバー</label>
+    <div class="member-input-row" style="margin-top:6px;">
+      <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" onkeydown="if(event.key==='Enter')addMember()">
+      <button class="btn btn-primary btn-small" onclick="addMember()">追加</button>
+    </div>
+    <div id="member-list"></div>
+  </div>
+  <div style="margin-top:20px;">
+    <label style="font-size:14px;color:#8e8e93;font-weight:600;">ホール数</label>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+      <button class="hole-nav-btn" onclick="changeHoleCount(-1)">−</button>
+      <span id="hole-count-display" style="font-size:24px;font-weight:800;min-width:40px;text-align:center;">18</span>
+      <button class="hole-nav-btn" onclick="changeHoleCount(1)">+</button>
+    </div>
+  </div>
+  <div style="margin-top:28px;">
+    <button class="btn btn-primary" id="start-round-btn" onclick="startRound()" disabled>スタート</button>
+  </div>
+</div>
+
+<!-- ========== Screen 3: Hole Input ========== -->
+<div id="screen-hole" class="screen">
+  <div class="top-bar">
+    <button class="back-btn" onclick="confirmBackToSetup()">← 設定</button>
+    <button class="home-btn" onclick="goToHomeFromRound()">🏠 ホーム</button>
+  </div>
+  <div class="hole-header">
+    <div class="round-name-display" id="hole-round-name"></div>
+    <div class="hole-label">HOLE</div>
+    <div class="hole-nav-row">
+      <button class="hole-nav-btn" onclick="prevHole()">◀</button>
+      <div class="hole-num" id="hole-display">1 / 18</div>
+      <button class="hole-nav-btn" onclick="nextHole()">▶</button>
+    </div>
+  </div>
+  <div id="hole-players"></div>
+  <div class="hole-actions">
+    <button class="btn btn-secondary btn-small" onclick="addExtraHole()">+ ホール追加</button>
+  </div>
+  <div class="cumulative-section">
+    <h3>📊 累計スコア</h3>
+    <div class="cumulative-grid" id="running-totals-grid"></div>
+  </div>
+  <div style="margin-top:16px;">
+    <button class="btn btn-primary" onclick="goToSettle()">精算へ →</button>
+  </div>
+</div>
+
+<!-- ========== Screen 4: Settlement ========== -->
+<div id="screen-settle" class="screen">
+  <div class="top-bar">
+    <button class="back-btn" onclick="goToHoleFromSettle()">← 入力に戻る</button>
+    <button class="home-btn" onclick="goToHomeFromRound()">🏠 ホーム</button>
+  </div>
+  <div class="header"><h1>精算</h1></div>
+
+  <div class="section-title">📊 集計結果</div>
+  <div id="settle-summary"></div>
+
+  <div class="point-input-row">
+    <label>1ポイント =</label>
+    <input type="number" id="point-value" value="100" min="1" inputmode="numeric">
+    <span class="unit">円</span>
+  </div>
+
+  <button class="btn btn-primary" onclick="calcPayments()">精算結果を計算</button>
+
+  <div id="h2h-result"></div>
+  <div id="payment-result"></div>
+
+  <div class="share-area" id="share-area" style="display:none;">
+    <button class="btn btn-secondary" onclick="copyResult()">📋 コピー</button>
+    <button class="btn btn-primary" onclick="shareResult()">📤 共有</button>
+  </div>
+</div>
+
+<script>
+let members = [];
+let holeCount = 18;
+let currentHole = 1;
+let holeData = [];
+let currentRoundId = null;
+let roundName = '';
+let paymentText = '';
+
+// ===== Navigation =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function goToHome() { loadHistory(); showScreen('screen-home'); }
+function goToHomeFromRound() { autoSave(); goToHome(); }
+function goToSetup() {
+  members = []; holeCount = 18; currentHole = 1; holeData = []; currentRoundId = null; roundName = '';
+  renderMemberList();
+  document.getElementById('hole-count-display').textContent = '18';
+  document.getElementById('member-name-input').value = '';
+  document.getElementById('round-name-input').value = '';
+  showScreen('screen-setup');
+}
+function goToHoleFromSettle() { showScreen('screen-hole'); }
+function confirmBackToSetup() {
+  if (confirm('入力データはリセットされます。よろしいですか？')) showScreen('screen-setup');
+}
+
+// ===== Autosave =====
+let saveTimer = null;
+function autoSave() {
+  if (!currentRoundId || members.length < 2) return;
+  const rounds = JSON.parse(localStorage.getItem('golf_rounds') || '[]');
+  const existing = rounds.findIndex(r => r.id === currentRoundId);
+  const rd = {
+    id: currentRoundId,
+    name: roundName,
+    date: new Date().toLocaleDateString('ja-JP'),
+    members: [...members],
+    holeData: JSON.parse(JSON.stringify(holeData)),
+    holeCount: holeData.length
+  };
+  if (existing >= 0) rounds[existing] = rd; else rounds.unshift(rd);
+  if (rounds.length > 20) rounds.length = 20;
+  localStorage.setItem('golf_rounds', JSON.stringify(rounds));
+}
+function autoSaveDebounced() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    autoSave();
+    showToast();
+  }, 500);
+}
+function showToast() {
+  const t = document.getElementById('autosave-toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+// ===== Members =====
+function addMember() {
+  const input = document.getElementById('member-name-input');
+  const name = input.value.trim();
+  if (!name) return;
+  if (members.length >= 8) { alert('最大8人までです'); return; }
+  if (members.includes(name)) { alert('同じ名前が既にあります'); return; }
+  members.push(name); input.value = ''; input.focus();
+  renderMemberList();
+}
+function removeMember(idx) { members.splice(idx, 1); renderMemberList(); }
+function renderMemberList() {
+  document.getElementById('member-list').innerHTML = members.map((m, i) => `
+    <div class="member-list-item">
+      <span>${m}</span>
+      <button class="remove-btn" onclick="removeMember(${i})">×</button>
+    </div>`).join('');
+  document.getElementById('start-round-btn').disabled = members.length < 2;
+}
+function changeHoleCount(d) {
+  holeCount = Math.max(1, Math.min(36, holeCount + d));
+  document.getElementById('hole-count-display').textContent = holeCount;
+}
+
+// ===== Start Round =====
+function startRound() {
+  if (members.length < 2) return;
+  roundName = document.getElementById('round-name-input').value.trim() || new Date().toLocaleDateString('ja-JP') + ' ラウンド';
+  currentHole = 1; holeData = [];
+  for (let h = 0; h < holeCount; h++) holeData.push(members.map(() => ({ maru: 0, batsu: 0 })));
+  currentRoundId = Date.now().toString();
+  autoSave();
+  renderHole(); showScreen('screen-hole');
+}
+
+// ===== Hole Input =====
+function getPlayerTotal(idx) {
+  let maru = 0, batsu = 0;
+  for (let h = 0; h < holeData.length; h++) { maru += holeData[h][idx].maru; batsu += holeData[h][idx].batsu; }
+  return { maru, batsu, net: maru - batsu };
+}
+
+function renderHole() {
+  document.getElementById('hole-round-name').textContent = roundName;
+  document.getElementById('hole-display').textContent = `${currentHole} / ${holeData.length}`;
+  const data = holeData[currentHole - 1];
+  document.getElementById('hole-players').innerHTML = members.map((name, i) => {
+    const t = getPlayerTotal(i);
+    const cls = t.net > 0 ? 'positive' : t.net < 0 ? 'negative' : 'zero';
+    return `
+    <div class="player-card">
+      <div class="player-card-header">${name}</div>
+      <div class="player-card-body">
+        <div class="counter-row-new">
+          <div class="counter-icon maru">⭕</div>
+          <div class="counter-controls">
+            <button class="c-btn minus" onclick="adjust(${i},'maru',-1)">−</button>
+            <div class="c-val" id="maru-${i}">${data[i].maru}</div>
+            <button class="c-btn" onclick="adjust(${i},'maru',1)">+</button>
+          </div>
+        </div>
+        <div class="counter-row-new">
+          <div class="counter-icon batsu">❌</div>
+          <div class="counter-controls">
+            <button class="c-btn minus" onclick="adjust(${i},'batsu',-1)">−</button>
+            <div class="c-val" id="batsu-${i}">${data[i].batsu}</div>
+            <button class="c-btn" onclick="adjust(${i},'batsu',1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="player-card-footer">
+        Total Points: <span class="pts ${cls}" id="total-${i}">${(t.net>=0?'+':'')+t.net}</span>
+      </div>
+    </div>`;
+  }).join('');
+  renderRunningTotals();
+}
+
+function adjust(mi, type, delta) {
+  const d = holeData[currentHole - 1][mi];
+  d[type] = Math.max(0, d[type] + delta);
+  document.getElementById(`${type}-${mi}`).textContent = d[type];
+  const t = getPlayerTotal(mi);
+  const el = document.getElementById(`total-${mi}`);
+  el.textContent = (t.net >= 0 ? '+' : '') + t.net;
+  el.className = 'pts ' + (t.net > 0 ? 'positive' : t.net < 0 ? 'negative' : 'zero');
+  renderRunningTotals();
+  autoSaveDebounced();
+}
+
+function prevHole() { if (currentHole > 1) { currentHole--; renderHole(); } }
+function nextHole() { if (currentHole < holeData.length) { currentHole++; renderHole(); } }
+function addExtraHole() {
+  holeData.push(members.map(() => ({ maru: 0, batsu: 0 })));
+  currentHole = holeData.length; renderHole(); autoSaveDebounced();
+}
+
+function getTotals() { return members.map((_, i) => getPlayerTotal(i)); }
+
+function renderRunningTotals() {
+  const totals = getTotals();
+  document.getElementById('running-totals-grid').innerHTML = totals.map((t, i) => {
+    const cls = t.net > 0 ? 'plus' : t.net < 0 ? 'minus' : 'zero';
+    return `
+      <div class="cumulative-item">
+        <span class="name">${members[i]}</span>
+        <span class="scores">
+          <span class="m">⭕${t.maru}</span>
+          <span class="b">❌${t.batsu}</span>
+          <span class="total-badge ${cls}">${(t.net>=0?'+':'')+t.net}</span>
+        </span>
+      </div>`;
+  }).join('');
+}
+
+// ===== Settlement =====
+function goToSettle() {
+  const totals = getTotals();
+  document.getElementById('settle-summary').innerHTML = totals.map((t, i) => {
+    const cls = t.net > 0 ? 'positive' : t.net < 0 ? 'negative' : '';
+    return `
+      <div class="settle-row">
+        <div class="player-score">
+          <div class="name">${members[i]}</div>
+          <div class="detail">⭕${t.maru}　❌${t.batsu}</div>
+        </div>
+        <div class="net-val ${cls}">${(t.net>=0?'+':'')+t.net}</div>
+      </div>`;
+  }).join('');
+  document.getElementById('h2h-result').innerHTML = '';
+  document.getElementById('payment-result').innerHTML = '';
+  document.getElementById('share-area').style.display = 'none';
+  showScreen('screen-settle');
+}
+
+function calcPayments() {
+  const pointVal = parseInt(document.getElementById('point-value').value) || 0;
+  if (pointVal <= 0) { alert('ポイント単価を入力してください'); return; }
+  const totals = getTotals();
+  const N = members.length;
+
+  // Head-to-head
+  let h2hHtml = '<div class="h2h-section"><h3>🔄 メンバー間の差分</h3>';
+  let h2hText = '';
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const diff = totals[i].net - totals[j].net;
+      const absDiff = Math.abs(diff);
+      const yen = absDiff * pointVal;
+      let diffLabel, yenLabel, cls;
+      if (diff > 0) {
+        diffLabel = `${members[i]} が +${absDiff}pt`;
+        yenLabel = `${members[j]} → ${members[i]} に ${yen.toLocaleString()}円`;
+        cls = 'win';
+      } else if (diff < 0) {
+        diffLabel = `${members[j]} が +${absDiff}pt`;
+        yenLabel = `${members[i]} → ${members[j]} に ${yen.toLocaleString()}円`;
+        cls = 'lose';
+      } else {
+        diffLabel = 'イーブン'; yenLabel = '精算なし'; cls = 'even';
+      }
+      h2hText += `${members[i]} ↔ ${members[j]}：${diffLabel}（${diff === 0 ? '精算なし' : yenLabel}）\n`;
+      h2hHtml += `
+        <div class="h2h-row">
+          <div class="h2h-names"><span>${members[i]}</span><span class="sep">↔</span><span>${members[j]}</span></div>
+          <div class="h2h-result">
+            <div class="diff ${cls}">${diffLabel}</div>
+            <div class="yen">${yenLabel}</div>
+          </div>
+        </div>`;
+    }
+  }
+  h2hHtml += '</div>';
+  document.getElementById('h2h-result').innerHTML = h2hHtml;
+
+  // Optimal payments
+  const sumNets = totals.reduce((s, t) => s + t.net, 0);
+  const balances = totals.map(t => (N * t.net - sumNets) * pointVal);
+  let creditors = [], debtors = [];
+  balances.forEach((b, i) => {
+    if (b > 0) creditors.push({ idx: i, amount: b });
+    else if (b < 0) debtors.push({ idx: i, amount: -b });
+  });
+  creditors.sort((a, b) => b.amount - a.amount);
+  debtors.sort((a, b) => b.amount - a.amount);
+  let payments = [], ci = 0, di = 0;
+  while (ci < creditors.length && di < debtors.length) {
+    const transfer = Math.min(creditors[ci].amount, debtors[di].amount);
+    if (transfer > 0) payments.push({ from: members[debtors[di].idx], to: members[creditors[ci].idx], amount: transfer });
+    creditors[ci].amount -= transfer; debtors[di].amount -= transfer;
+    if (creditors[ci].amount === 0) ci++;
+    if (debtors[di].amount === 0) di++;
+  }
+
+  const container = document.getElementById('payment-result');
+  if (payments.length === 0) {
+    container.innerHTML = '<div class="settle-done">差分なし！全員イーブンです 🎉</div>';
+    paymentText = '差分なし！全員イーブンです。';
+  } else {
+    container.innerHTML = `
+      <div class="section-title">💰 支払いまとめ</div>
+      ${payments.map(p => `
+        <div class="payment-card">
+          <div class="flow"><span>${p.from}</span><span class="arrow-pay">→</span><span>${p.to}</span></div>
+          <div class="amount">${p.amount.toLocaleString()}円</div>
+        </div>`).join('')}
+      <div class="settle-done">✅ ${payments.length}回の送金で精算完了！</div>`;
+    paymentText = `⛳ ${roundName}\n1pt = ${pointVal.toLocaleString()}円\n\n`;
+    paymentText += `【集計】\n`;
+    totals.forEach((t, i) => { paymentText += `${members[i]}: ⭕${t.maru} ❌${t.batsu} (${(t.net>=0?'+':'')+t.net})\n`; });
+    paymentText += `\n【メンバー間の差分】\n${h2hText}`;
+    paymentText += `\n【支払い】\n`;
+    payments.forEach(p => { paymentText += `${p.from} → ${p.to}: ${p.amount.toLocaleString()}円\n`; });
+  }
+  document.getElementById('share-area').style.display = 'flex';
+}
+
+function copyResult() {
+  navigator.clipboard.writeText(paymentText).then(() => alert('コピーしました！')).catch(() => {
+    const ta = document.createElement('textarea'); ta.value = paymentText;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); alert('コピーしました！');
+  });
+}
+function shareResult() {
+  if (navigator.share) navigator.share({ text: paymentText }).catch(() => {});
+  else copyResult();
+}
+
+// ===== History =====
+function loadHistory() {
+  const rounds = JSON.parse(localStorage.getItem('golf_rounds') || '[]');
+  const c = document.getElementById('history-list');
+  if (!rounds.length) { c.innerHTML = '<div style="text-align:center;color:#8e8e93;padding:20px;font-size:14px;">まだ記録がありません</div>'; return; }
+  c.innerHTML = rounds.map((r, i) => `
+    <div class="history-item" onclick="loadRound(${i})">
+      <div class="info">
+        <div class="round-name">${r.name || 'ラウンド'}</div>
+        <div class="date">${r.date}</div>
+        <div class="members">${r.members.join(', ')}（${r.holeCount}H）</div>
+      </div>
+      <button class="history-delete" onclick="event.stopPropagation();deleteRound(${i})">🗑</button>
+      <div class="arrow">›</div>
+    </div>`).join('');
+}
+function loadRound(idx) {
+  const r = JSON.parse(localStorage.getItem('golf_rounds') || '[]')[idx]; if (!r) return;
+  members = r.members; holeData = r.holeData;
+  holeCount = r.holeCount || holeData.length;
+  roundName = r.name || 'ラウンド';
+  currentHole = 1; currentRoundId = r.id;
+  renderHole(); showScreen('screen-hole');
+}
+function deleteRound(idx) {
+  if (!confirm('このラウンドを削除しますか？')) return;
+  const rounds = JSON.parse(localStorage.getItem('golf_rounds') || '[]');
+  rounds.splice(idx, 1); localStorage.setItem('golf_rounds', JSON.stringify(rounds));
+  loadHistory();
+}
+
+loadHistory();
+</script>
+</body>
+</html>
