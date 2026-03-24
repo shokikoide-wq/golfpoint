@@ -281,8 +281,8 @@
   <div>
     <label style="font-size:14px;color:#8e8e93;font-weight:600;">メンバー</label>
     <div class="member-input-row" style="margin-top:6px;">
-      <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault();addMember()}">
-      <button class="btn btn-primary btn-small" id="add-member-btn">追加</button>
+      <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();addMember()}">
+      <label for="member-name-input" class="btn btn-primary btn-small" onclick="addMember()" style="text-align:center;line-height:1;">追加</label>
     </div>
     <div id="member-list"></div>
   </div>
@@ -422,12 +422,8 @@ function addMember() {
   if (members.includes(name)) { alert('同じ名前が既にあります'); return; }
   members.push(name);
   input.value = '';
-  input.focus(); // DOM変更前にfocusを呼ぶ（iOSでキーボード維持に必須）
-  // DOM更新は次フレームに遅延（focusの後にDOMを触るとiOSでキーボードが閉じる）
-  requestAnimationFrame(function() {
-    appendMemberItem(name, members.length - 1);
-    document.getElementById('start-round-btn').disabled = members.length < 2;
-  });
+  appendMemberItem(name, members.length - 1);
+  document.getElementById('start-round-btn').disabled = members.length < 2;
 }
 function removeMember(idx) { members.splice(idx, 1); renderMemberList(); }
 function appendMemberItem(name, idx) {
@@ -446,24 +442,6 @@ function renderMemberList() {
   document.getElementById('start-round-btn').disabled = members.length < 2;
 }
 
-// 追加ボタン: タッチデバイスでキーボードを閉じさせない
-(function() {
-  const btn = document.getElementById('add-member-btn');
-  let touched = false;
-  btn.addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    touched = true;
-  });
-  btn.addEventListener('touchend', function(e) {
-    e.preventDefault();
-    addMember();
-    touched = false;
-  });
-  btn.addEventListener('click', function(e) {
-    if (!touched) addMember();
-    touched = false;
-  });
-}());
 function changeHoleCount(d) {
   holeCount = Math.max(1, Math.min(36, holeCount + d));
   document.getElementById('hole-count-display').textContent = holeCount;
