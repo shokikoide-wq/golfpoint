@@ -371,7 +371,7 @@ function goToHome() { loadHistory(); showScreen('screen-home'); }
 function goToHomeFromRound() { autoSave(); goToHome(); }
 function goToSetup() {
   members = []; holeCount = 18; currentHole = 1; holeData = []; currentRoundId = null; roundName = '';
-  renderMemberList();
+  rebuildMemberList();
   document.getElementById('hole-count-display').textContent = '18';
   document.getElementById('member-name-input').value = '';
   document.getElementById('round-name-input').value = '';
@@ -420,17 +420,41 @@ function addMember() {
   if (!name) return;
   if (members.length >= 8) { alert('最大8人までです'); return; }
   if (members.includes(name)) { alert('同じ名前が既にあります'); return; }
-  members.push(name); input.value = '';
-  renderMemberList();
-  setTimeout(() => input.focus(), 50);
+  members.push(name);
+  input.value = '';
+  // innerHTMLではなくappendChildでDOM追加（iOSのinput接続を切断しない）
+  var list = document.getElementById('member-list');
+  var div = document.createElement('div');
+  div.className = 'member-list-item';
+  var span = document.createElement('span');
+  span.textContent = name;
+  var btn = document.createElement('button');
+  btn.className = 'remove-btn';
+  btn.textContent = '×';
+  btn.setAttribute('onclick', 'removeMember(' + (members.length - 1) + ')');
+  div.appendChild(span);
+  div.appendChild(btn);
+  list.appendChild(div);
+  document.getElementById('start-round-btn').disabled = members.length < 2;
+  input.focus();
 }
-function removeMember(idx) { members.splice(idx, 1); renderMemberList(); }
-function renderMemberList() {
-  document.getElementById('member-list').innerHTML = members.map((m, i) => `
-    <div class="member-list-item">
-      <span>${m}</span>
-      <button class="remove-btn" onclick="removeMember(${i})">×</button>
-    </div>`).join('');
+function removeMember(idx) { members.splice(idx, 1); rebuildMemberList(); }
+function rebuildMemberList() {
+  var list = document.getElementById('member-list');
+  while (list.firstChild) list.removeChild(list.firstChild);
+  members.forEach(function(m, i) {
+    var div = document.createElement('div');
+    div.className = 'member-list-item';
+    var span = document.createElement('span');
+    span.textContent = m;
+    var btn = document.createElement('button');
+    btn.className = 'remove-btn';
+    btn.textContent = '×';
+    btn.setAttribute('onclick', 'removeMember(' + i + ')');
+    div.appendChild(span);
+    div.appendChild(btn);
+    list.appendChild(div);
+  });
   document.getElementById('start-round-btn').disabled = members.length < 2;
 }
 
