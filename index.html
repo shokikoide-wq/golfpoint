@@ -420,9 +420,14 @@ function addMember() {
   if (!name) return;
   if (members.length >= 8) { alert('最大8人までです'); return; }
   if (members.includes(name)) { alert('同じ名前が既にあります'); return; }
-  members.push(name); input.value = '';
-  appendMemberItem(name, members.length - 1);
-  document.getElementById('start-round-btn').disabled = members.length < 2;
+  members.push(name);
+  input.value = '';
+  input.focus(); // DOM変更前にfocusを呼ぶ（iOSでキーボード維持に必須）
+  // DOM更新は次フレームに遅延（focusの後にDOMを触るとiOSでキーボードが閉じる）
+  requestAnimationFrame(function() {
+    appendMemberItem(name, members.length - 1);
+    document.getElementById('start-round-btn').disabled = members.length < 2;
+  });
 }
 function removeMember(idx) { members.splice(idx, 1); renderMemberList(); }
 function appendMemberItem(name, idx) {
