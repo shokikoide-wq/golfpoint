@@ -281,8 +281,8 @@
   <div>
     <label style="font-size:14px;color:#8e8e93;font-weight:600;">メンバー</label>
     <div class="member-input-row" style="margin-top:6px;">
-      <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" onkeydown="if(event.key==='Enter')addMember()">
-      <button class="btn btn-primary btn-small" onclick="addMember()">追加</button>
+      <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" onkeydown="if(event.key==='Enter'&&!event.isComposing)addMember()">
+      <label for="member-name-input" class="btn btn-primary btn-small" style="text-align:center" onclick="addMember()">追加</label>
     </div>
     <div id="member-list"></div>
   </div>
@@ -415,28 +415,31 @@ function showToast() {
 
 // ===== Members =====
 function addMember() {
-  const input = document.getElementById('member-name-input');
-  const name = input.value.trim();
+  var input = document.getElementById('member-name-input');
+  var name = input.value.trim();
   if (!name) return;
   if (members.length >= 8) { alert('最大8人までです'); return; }
   if (members.includes(name)) { alert('同じ名前が既にあります'); return; }
   members.push(name);
   input.value = '';
-  // innerHTMLではなくappendChildでDOM追加（iOSのinput接続を切断しない）
-  var list = document.getElementById('member-list');
-  var div = document.createElement('div');
-  div.className = 'member-list-item';
-  var span = document.createElement('span');
-  span.textContent = name;
-  var btn = document.createElement('button');
-  btn.className = 'remove-btn';
-  btn.textContent = '×';
-  btn.setAttribute('onclick', 'removeMember(' + (members.length - 1) + ')');
-  div.appendChild(span);
-  div.appendChild(btn);
-  list.appendChild(div);
-  document.getElementById('start-round-btn').disabled = members.length < 2;
-  input.focus();
+  // DOM変更をすべて遅延させ、labelのネイティブfocusを邪魔しない
+  var memberName = name;
+  var memberIdx = members.length - 1;
+  setTimeout(function() {
+    var list = document.getElementById('member-list');
+    var div = document.createElement('div');
+    div.className = 'member-list-item';
+    var span = document.createElement('span');
+    span.textContent = memberName;
+    var btn = document.createElement('button');
+    btn.className = 'remove-btn';
+    btn.textContent = '×';
+    btn.setAttribute('onclick', 'removeMember(' + memberIdx + ')');
+    div.appendChild(span);
+    div.appendChild(btn);
+    list.appendChild(div);
+    document.getElementById('start-round-btn').disabled = members.length < 2;
+  }, 50);
 }
 function removeMember(idx) { members.splice(idx, 1); rebuildMemberList(); }
 function rebuildMemberList() {
