@@ -281,8 +281,8 @@
   <div>
     <label style="font-size:14px;color:#8e8e93;font-weight:600;">メンバー</label>
     <div class="member-input-row" style="margin-top:6px;">
-      <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();addMember()}">
-      <label for="member-name-input" class="btn btn-primary btn-small" onclick="addMember()" style="text-align:center;line-height:1;">追加</label>
+      <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" onkeydown="if(event.key==='Enter')addMember()">
+      <button class="btn btn-primary btn-small" onclick="addMember()">追加</button>
     </div>
     <div id="member-list"></div>
   </div>
@@ -420,19 +420,11 @@ function addMember() {
   if (!name) return;
   if (members.length >= 8) { alert('最大8人までです'); return; }
   if (members.includes(name)) { alert('同じ名前が既にあります'); return; }
-  members.push(name);
-  input.value = '';
-  appendMemberItem(name, members.length - 1);
-  document.getElementById('start-round-btn').disabled = members.length < 2;
+  members.push(name); input.value = '';
+  renderMemberList();
+  setTimeout(() => input.focus(), 50);
 }
 function removeMember(idx) { members.splice(idx, 1); renderMemberList(); }
-function appendMemberItem(name, idx) {
-  const list = document.getElementById('member-list');
-  const div = document.createElement('div');
-  div.className = 'member-list-item';
-  div.innerHTML = `<span>${name}</span><button class="remove-btn" onclick="removeMember(${idx})">×</button>`;
-  list.appendChild(div);
-}
 function renderMemberList() {
   document.getElementById('member-list').innerHTML = members.map((m, i) => `
     <div class="member-list-item">
