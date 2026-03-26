@@ -280,12 +280,10 @@
   </div>
   <div>
     <label style="font-size:14px;color:#8e8e93;font-weight:600;">メンバー</label>
-    <form id="member-form" action="#" onsubmit="event.preventDefault();addMember();">
-      <div class="member-input-row" style="margin-top:6px;">
-        <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" enterkeyhint="send">
-        <button type="submit" class="btn btn-primary btn-small">追加</button>
-      </div>
-    </form>
+    <div class="member-input-row" style="margin-top:6px;">
+      <input type="text" id="member-name-input" placeholder="名前を入力" maxlength="10" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();addMember()}">
+      <button class="btn btn-primary btn-small" onclick="addMember()">追加</button>
+    </div>
     <div id="member-list"></div>
   </div>
   <div style="margin-top:20px;">
@@ -424,8 +422,9 @@ function addMember() {
   if (members.includes(name)) { alert('同じ名前が既にあります'); return; }
   members.push(name);
   input.value = '';
-  input.blur();
   rebuildMemberList();
+  input.blur();
+  document.activeElement.blur();
 }
 function removeMember(idx) { members.splice(idx, 1); rebuildMemberList(); }
 function rebuildMemberList() {
